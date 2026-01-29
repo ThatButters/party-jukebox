@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Jukebox</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: radial-gradient(circle at center, #2a2a3e 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes tubeGlow {
+            0%, 100% { box-shadow: 0 0 10px currentColor, inset 0 0 10px currentColor; }
+            50% { box-shadow: 0 0 20px currentColor, inset 0 0 20px currentColor; }
+        }
+
+        @keyframes vinylSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .jukebox-frame {
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #c4914a 0%, #8b6332 100%);
+            border-radius: 50% 50% 30px 30px / 40% 40% 30px 30px;
+            box-shadow: 
+                0 30px 80px rgba(0,0,0,0.9),
+                inset 0 10px 30px rgba(255,255,255,0.15);
+            padding: 40px 30px 30px 30px;
+            position: relative;
+            overflow: visible;
+            border: 12px solid #654321;
+        }
+
+        .jukebox-dome {
+            position: absolute;
+            top: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75%;
+            height: 160px;
+            background: radial-gradient(ellipse at center top, 
+                rgba(255,220,150,0.4) 0%,
+                rgba(255,180,80,0.6) 40%,
+                rgba(200,120,40,0.5) 100%);
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            border: 10px solid #b8860b;
+            border-bottom: none;
+            box-shadow: 
+                0 -10px 40px rgba(255,200,100,0.4),
+                inset 0 10px 30px rgba(255,255,255,0.3),
+                inset 0 -5px 20px rgba(0,0,0,0.2);
+        }
+
+        .jukebox-dome::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(ellipse at top, rgba(255,255,255,0.3), transparent);
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        }
+
+        .speaker-grille {
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    #2a2a2a 0px,
+                    #2a2a2a 2px,
+                    #1a1a1a 2px,
+                    #1a1a1a 4px
+                );
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 3px solid #3a3a3a;
+            box-shadow: inset 0 5px 20px rgba(0,0,0,0.8);
+        }
+
+        .chrome-accent {
+            height: 8px;
+            background: linear-gradient(90deg, 
+                #999 0%, #fff 25%, #ddd 50%, #fff 75%, #999 100%);
+            margin: 15px 0;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .side-panels {
+            position: absolute;
+            top: 100px;
+            width: 60px;
+            height: 400px;
+            background: linear-gradient(180deg, #8b6332 0%, #654321 100%);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .side-panels.left {
+            left: -20px;
+            border-radius: 15px 0 0 15px;
+            transform: perspective(200px) rotateY(5deg);
+        }
+
+        .side-panels.right {
+            right: -20px;
+            border-radius: 0 15px 15px 0;
+            transform: perspective(200px) rotateY(-5deg);
+        }
+
+        .jukebox-body {
+            margin-top: 60px;
+            background: linear-gradient(135deg, #2a1810 0%, #1a1008 100%);
+            border-radius: 20px;
+            padding: 30px;
+            border: 5px solid #b8860b;
+            box-shadow: 
+                inset 0 5px 30px rgba(0,0,0,0.8),
+                0 10px 40px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        .jukebox-top {
+            background: radial-gradient(ellipse at center, #ff8866 0%, #ff5544 60%, #cc3322 100%);
+            height: 120px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 0 60px rgba(255,107,107,1),
+                inset 0 5px 20px rgba(255,255,255,0.3),
+                inset 0 -5px 20px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
+            border: 5px solid #b8860b;
+            padding: 20px;
+        }
+
+        .jukebox-top::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 4s infinite;
+            z-index: 1;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .vinyl-spinner {
+            position: absolute;
+            right: 40px;
+            top: 30px;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #1a1a1a 35%, #FFD700 36%, #FFD700 38%, #1a1a1a 39%, #1a1a1a 48%, #333 49%);
+            border-radius: 50%;
+            animation: vinylSpin 4s linear infinite;
+            box-shadow: 
+                0 0 30px rgba(255,215,0,0.6),
+                inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .vinyl-spinner::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff6b6b;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            display: none;
+        }
+
+        .neon-bee {
+            display: none;
+        }
+
+        .bee-glow {
+            display: none;
+        }
+
+        .geometric-bee {
+            position: relative;
+            width: 240px;
+            height: 180px;
+            margin: 0 auto;
+        }
+
+        .bee-body {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 100px;
+            background: transparent;
+        }
+
+        .bee-stripe {
+            position: absolute;
+            width: 80px;
+            height: 15px;
+            left: 0;
+            border-radius: 10px;
+        }
+
+        .bee-stripe:nth-child(1) {
+            top: 10px;
+            background: #FFD700;
+            box-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700, inset 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .bee-stripe:nth-child(2) {
+            top: 30px;
+            background: #1a1a1a;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .bee-stripe:nth-child(3) {
+            top: 50px;
+            background: #FFD700;
+            box-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700, inset 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .bee-stripe:nth-child(4) {
+            top: 70px;
+            background: #1a1a1a;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .bee-wing {
+            position: absolute;
+            width: 70px;
+            height: 90px;
+            background: transparent;
+            border: 4px solid rgba(100,200,255,0.6);
+            border-radius: 50% 50% 50% 0;
+            top: 40px;
+            box-shadow: 0 0 15px rgba(100,200,255,0.8), 0 0 30px rgba(100,200,255,0.5);
+            animation: wingGlow 2s infinite;
+        }
+
+        @keyframes wingGlow {
+            0%, 100% { 
+                box-shadow: 0 0 15px rgba(100,200,255,0.8), 0 0 30px rgba(100,200,255,0.5);
+                opacity: 0.6;
+            }
+            50% { 
+                box-shadow: 0 0 25px rgba(100,200,255,1), 0 0 50px rgba(100,200,255,0.8);
+                opacity: 0.8;
+            }
+        }
+
+        .bee-wing.left {
+            left: -50px;
+            transform: rotate(-20deg);
+        }
+
+        .bee-wing.right {
+            right: -50px;
+            transform: rotate(20deg) scaleX(-1);
+        }
+
+        .bee-head {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #FFD700, 0 0 40px #FFD700, inset 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .bee-antenna {
+            position: absolute;
+            width: 3px;
+            height: 30px;
+            background: #FFD700;
+            box-shadow: 0 0 10px #FFD700;
+            top: -25px;
+        }
+
+        .bee-antenna.left {
+            left: 12px;
+            transform: rotate(-20deg);
+        }
+
+        .bee-antenna.right {
+            right: 12px;
+            transform: rotate(20deg);
+        }
+
+        .bee-antenna::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -3px;
+            width: 8px;
+            height: 8px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #FFD700;
+        }
+
+        .header p {
+            display: none;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(40,40,60,0.9) 0%, rgba(20,20,40,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(255,107,107,0.3);
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+            color: white;
+            border: 2px solid #ff8787;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #ff3838 100%);
+            box-shadow: 0 0 20px rgba(255,107,107,0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a8a0 100%);
+            color: white;
+            border: 2px solid #5eddd4;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #44a8a0 0%, #3a9389 100%);
+            box-shadow: 0 0 20px rgba(78,205,196,0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: 2px solid #e95e4e;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            box-shadow: 0 0 20px rgba(231,76,60,0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border: 2px solid #f5ab35;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            box-shadow: 0 0 20px rgba(243,156,18,0.6);
+            transform: translateY(-2px);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid rgba(255,107,107,0.3);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.4);
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 15px rgba(255,107,107,0.4);
+            background: rgba(0,0,0,0.6);
+        }
+
+        .qr-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #qrcode {
+            display: inline-block;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: black;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .queue-item {
+            background: linear-gradient(135deg, rgba(255,107,107,0.1) 0%, rgba(255,82,82,0.1) 100%);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255,107,107,0.2);
+            transition: all 0.3s;
+        }
+
+        .queue-item:hover {
+            background: linear-gradient(135deg, rgba(255,107,107,0.2) 0%, rgba(255,82,82,0.2) 100%);
+            border-color: rgba(255,107,107,0.4);
+            transform: translateX(5px);
+            box-shadow: -5px 0 15px rgba(255,107,107,0.3);
+        }
+
+        .queue-item-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .search-result {
+            background: linear-gradient(135deg, rgba(255,107,107,0.1) 0%, rgba(255,82,82,0.1) 100%);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255,107,107,0.2);
+        }
+
+        .search-result:hover {
+            background: linear-gradient(135deg, rgba(255,107,107,0.2) 0%, rgba(255,82,82,0.2) 100%);
+            transform: translateX(5px);
+            border-color: rgba(255,107,107,0.4);
+            box-shadow: -5px 0 15px rgba(255,107,107,0.3);
+        }
+
+        .search-result img {
+            width: 120px;
+            height: 90px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .search-result-info {
+            flex: 1;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .search-result-channel {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .queue-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 0 0 10px rgba(255,107,107,0.5);
+            min-width: 50px;
+        }
+
+        .queue-thumb {
+            width: 80px;
+            height: 60px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .instructions {
+            background: rgba(59, 130, 246, 0.2);
+            border: 2px solid rgba(59, 130, 246, 0.5);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="jukebox-frame">
+            <div class="side-panels left"></div>
+            <div class="side-panels right"></div>
+            
+            <div class="jukebox-body">
+                <div class="jukebox-top">
+                    <h1 style="font-size: 2.8rem; margin: 0; font-weight: bold; color: #FFD700; text-shadow: 0 0 30px rgba(255,215,0,1), 0 0 50px rgba(255,215,0,0.8), 3px 3px 15px rgba(0,0,0,1); letter-spacing: 6px; text-transform: uppercase; z-index: 10; position: relative;">PARTY JUKEBOX</h1>
+                    <div class="vinyl-spinner"></div>
+                </div>
+
+                <div class="chrome-accent"></div>
+                <div class="speaker-grille">
+                    <div style="height: 20px;"></div>
+                </div>
+                <div class="chrome-accent"></div>
+
+        <!-- QR Code Section -->
+        <div class="card text-center">
+            <button class="btn btn-primary" onclick="toggleQR()">
+                <span id="qr-btn-text">Show QR Code to Add Songs</span>
+            </button>
+            <div id="qr-container" class="qr-container hidden">
+                <div id="qrcode"></div>
+                <p class="mt-4">Scan to add a song to the queue</p>
+            </div>
+        </div>
+
+        <!-- Add Song Form -->
+        <div id="add-form" class="card hidden">
+            <div class="card-header">
+                <h2>Add a Song</h2>
+                <button class="close-btn" onclick="closeAddForm()">×</button>
+            </div>
+
+            <!-- Search Input -->
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="Search for a song (e.g., 'bohemian rhapsody')"
+                    onkeypress="if(event.key === 'Enter') searchSongs()"
+                />
+                <button class="btn btn-primary" onclick="searchSongs()" id="search-btn">🔍 Search</button>
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results" class="hidden" style="margin-top: 20px;">
+                <p style="margin-bottom: 10px; color: rgba(255, 255, 255, 0.8);">Click a song to add it:</p>
+                <div id="results-container"></div>
+            </div>
+
+            <!-- OR Divider -->
+            <div style="text-align: center; margin: 20px 0; color: rgba(255, 255, 255, 0.5);">
+                <span>— OR —</span>
+            </div>
+
+            <!-- URL Input -->
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="url-input" 
+                    placeholder="Paste YouTube URL here"
+                    onkeypress="if(event.key === 'Enter') addSongFromUrl()"
+                />
+                <button class="btn btn-success" onclick="addSongFromUrl()">➕ Add URL</button>
+            </div>
+        </div>
+
+        <!-- Add Button -->
+        <div id="add-btn-container" class="text-center" style="margin-bottom: 30px;">
+            <button class="btn btn-primary" onclick="showAddForm()">➕ Add Song</button>
+        </div>
+
+        <!-- Now Playing -->
+        <div id="now-playing" class="card hidden">
+            <h2 style="margin-bottom: 20px;">Now Playing</h2>
+            <div class="video-container">
+                <iframe 
+                    id="youtube-player"
+                    width="100%"
+                    height="100%"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                ></iframe>
+            </div>
+            <button class="btn btn-warning" onclick="skipSong()">⏭️ Skip to Next Song</button>
+        </div>
+
+        <div id="empty-player" class="card text-center">
+            <div class="empty-state">
+                <div style="font-size: 4rem; margin-bottom: 20px;">🎵</div>
+                <p style="font-size: 1.2rem;">No song playing. Add one to get started!</p>
+            </div>
+        </div>
+
+        <!-- Queue -->
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">Queue (<span id="queue-count">0</span> songs)</h2>
+            <div id="queue-container">
+                <div class="empty-state">Queue is empty</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let queue = [];
+        let currentSong = null;
+        let player = null;
+        let qrGenerated = false;
+        let serverIP = null;
+        let serverPort = null;
+        let syncInterval = null;
+        let isClientMode = false; // Whether this is a client (phone) or main display
+
+        // HTML escape function to prevent XSS attacks
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Detect if this is a client (opened via QR code or on mobile)
+        function detectClientMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isFromQR = urlParams.get('add') === 'true';
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            isClientMode = isFromQR || isMobile;
+            
+            if (isClientMode) {
+                console.log('Running in client mode (phone/add interface)');
+                // Hide the player section on clients
+                document.getElementById('now-playing').style.display = 'none';
+                document.getElementById('empty-player').style.display = 'none';
+            }
+        }
+
+        // Call on load
+        detectClientMode();
+
+        // Get server IP from our Python server's API
+        async function getServerIP() {
+            try {
+                const response = await fetch('/api/server-ip');
+                const data = await response.json();
+                serverIP = data.ip;
+                serverPort = data.port;
+                console.log('Server IP detected:', serverIP);
+                return serverIP;
+            } catch (error) {
+                console.error('Failed to get server IP:', error);
+                serverIP = window.location.hostname;
+                serverPort = window.location.port || '8000';
+                return serverIP;
+            }
+        }
+
+        // Sync state with server
+        async function syncWithServer() {
+            try {
+                const response = await fetch('/api/state');
+                
+                // Check if response is actually JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.warn('Server returned non-JSON response, skipping sync');
+                    return;
+                }
+                
+                if (!response.ok) {
+                    console.warn('Sync failed with status:', response.status);
+                    return;
+                }
+                
+                const serverState = await response.json();
+                
+                // Check if we should auto-play before updating state
+                const shouldAutoPlay = !isClientMode && !currentSong && !serverState.currentSong && serverState.queue && serverState.queue.length > 0;
+                
+                // Update local state from server
+                queue = serverState.queue || [];
+                
+                // Update current song if changed
+                const serverCurrentSong = serverState.currentSong;
+                if (JSON.stringify(currentSong) !== JSON.stringify(serverCurrentSong)) {
+                    currentSong = serverCurrentSong;
+                    if (currentSong) {
+                        displayCurrentSong();
+                    } else {
+                        document.getElementById('now-playing').classList.add('hidden');
+                        document.getElementById('empty-player').classList.remove('hidden');
+                    }
+                }
+                
+                // Auto-play first song if nothing is playing (only on main display)
+                if (shouldAutoPlay) {
+                    console.log('Auto-playing first song from queue');
+                    const firstSong = queue.shift();
+                    playSong(firstSong);
+                }
+                
+                updateQueue();
+            } catch (error) {
+                // Silently fail - this is expected during initial page load
+                console.debug('Sync error (this is normal during startup):', error.message);
+            }
+        }
+
+        // Push state to server
+        async function pushToServer() {
+            try {
+                const state = {
+                    queue: queue,
+                    currentSong: currentSong
+                };
+                
+                await fetch('/api/state', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(state)
+                });
+            } catch (error) {
+                console.error('Push to server failed:', error);
+            }
+        }
+
+        // Display current song without changing it
+        function displayCurrentSong() {
+            if (!currentSong || isClientMode) return; // Don't display on client devices
+            
+            document.getElementById('now-playing').classList.remove('hidden');
+            document.getElementById('empty-player').classList.add('hidden');
+
+            const iframe = document.getElementById('youtube-player');
+            const newSrc = `https://www.youtube.com/embed/${currentSong.videoId}?autoplay=1`;
+            
+            // Always update the src to force reload
+            iframe.src = newSrc;
+        }
+
+        // Start syncing every 2 seconds
+        function startSync() {
+            syncInterval = setInterval(syncWithServer, 2000);
+        }
+
+        // Check if coming from QR code
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('add') === 'true') {
+            showAddForm();
+        }
+
+        // YouTube API ready
+        function onYouTubeIframeAPIReady() {
+            console.log('YouTube API ready');
+        }
+
+        // Get IP and start sync on load
+        getServerIP().then(() => {
+            syncWithServer();
+            startSync();
+        });
+
+        async function toggleQR() {
+            const container = document.getElementById('qr-container');
+            const btnText = document.getElementById('qr-btn-text');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                btnText.textContent = 'Generating QR Code...';
+                
+                if (!qrGenerated) {
+                    // Make sure we have the server IP
+                    if (!serverIP) {
+                        await getServerIP();
+                    }
+                    
+                    const ip = serverIP || window.location.hostname;
+                    const port = serverPort || window.location.port || '8000';
+                    const qrUrl = `http://${ip}:${port}/jukebox.html?add=true`;
+                    
+                    console.log('Generating QR code for:', qrUrl);
+                    
+                    new QRCode(document.getElementById('qrcode'), {
+                        text: qrUrl,
+                        width: 200,
+                        height: 200,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    qrGenerated = true;
+                    btnText.textContent = 'Hide QR Code';
+                }
+            } else {
+                container.classList.add('hidden');
+                btnText.textContent = 'Show QR Code to Add Songs';
+            }
+        }
+
+        function showAddForm() {
+            document.getElementById('add-form').classList.remove('hidden');
+            document.getElementById('add-btn-container').classList.add('hidden');
+        }
+
+        function closeAddForm() {
+            document.getElementById('add-form').classList.add('hidden');
+            document.getElementById('add-btn-container').classList.remove('hidden');
+            document.getElementById('url-input').value = '';
+            document.getElementById('search-input').value = '';
+            document.getElementById('search-results').classList.add('hidden');
+        }
+
+        function openYouTube() {
+            window.open('https://www.youtube.com', '_blank');
+        }
+
+        // Search for songs
+        async function searchSongs() {
+            const searchInput = document.getElementById('search-input');
+            const query = searchInput.value.trim();
+            const searchBtn = document.getElementById('search-btn');
+            const resultsContainer = document.getElementById('results-container');
+            const searchResults = document.getElementById('search-results');
+            
+            if (!query) {
+                alert('Please enter a search term');
+                return;
+            }
+            
+            searchBtn.textContent = '🔍 Searching...';
+            searchBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const results = await response.json();
+                
+                if (results.length > 0) {
+                    resultsContainer.innerHTML = '';
+                    results.forEach((result, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'search-result';
+                        div.dataset.videoId = result.videoId;
+                        div.dataset.title = result.title;
+                        div.addEventListener('click', function() {
+                            addSongFromSearch(this.dataset.videoId, this.dataset.title);
+                        });
+
+                        const img = document.createElement('img');
+                        img.src = result.thumbnail;
+                        img.alt = result.title;
+
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'search-result-info';
+
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'search-result-title';
+                        titleDiv.textContent = result.title;
+
+                        const channelDiv = document.createElement('div');
+                        channelDiv.className = 'search-result-channel';
+                        channelDiv.textContent = result.channelTitle;
+
+                        const addIcon = document.createElement('span');
+                        addIcon.style.fontSize = '1.5rem';
+                        addIcon.textContent = '➕';
+
+                        infoDiv.appendChild(titleDiv);
+                        infoDiv.appendChild(channelDiv);
+                        div.appendChild(img);
+                        div.appendChild(infoDiv);
+                        div.appendChild(addIcon);
+                        resultsContainer.appendChild(div);
+                    });
+                    searchResults.classList.remove('hidden');
+                } else {
+                    alert('No results found. Try a different search term.');
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+                alert('Search failed. Please try again or paste a YouTube URL directly.');
+            }
+            
+            searchBtn.textContent = '🔍 Search';
+            searchBtn.disabled = false;
+        }
+
+        // Add song from search result
+        function addSongFromSearch(videoId, title) {
+            const song = {
+                id: Date.now(),
+                videoId: videoId,
+                title: title,
+                addedAt: new Date().toLocaleTimeString()
+            };
+
+            queue.push(song);
+            
+            if (isClientMode) {
+                // Client mode: push to server first, then show confirmation
+                updateQueue();
+                pushToServer().then(() => {
+                    alert(`✅ "${title}" has been added to the queue!`);
+                    closeAddForm();
+                });
+            } else {
+                // Main display mode: add and potentially play
+                closeAddForm();
+                if (!currentSong) {
+                    playSong(song);
+                } else {
+                    updateQueue();
+                    pushToServer();
+                }
+            }
+        }
+
+        function extractVideoId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function addSongFromUrl() {
+            const input = document.getElementById('url-input');
+            const url = input.value.trim();
+            const videoId = extractVideoId(url);
+
+            if (videoId) {
+                const song = {
+                    id: Date.now(),
+                    videoId: videoId,
+                    url: url,
+                    addedAt: new Date().toLocaleTimeString()
+                };
+
+                queue.push(song);
+                input.value = '';
+                
+                if (isClientMode) {
+                    // Client mode: push to server first, then show confirmation
+                    updateQueue();
+                    pushToServer().then(() => {
+                        alert('✅ Your song has been added to the queue!');
+                        closeAddForm();
+                    });
+                } else {
+                    // Main display mode: add and potentially play
+                    closeAddForm();
+                    if (!currentSong) {
+                        playSong(song);
+                    } else {
+                        updateQueue();
+                        pushToServer();
+                    }
+                }
+            } else {
+                alert('Please enter a valid YouTube URL (e.g., https://www.youtube.com/watch?v=...)');
+            }
+        }
+
+        function playSong(song) {
+            currentSong = song;
+            pushToServer();
+            
+            if (!isClientMode) {
+                document.getElementById('now-playing').classList.remove('hidden');
+                document.getElementById('empty-player').classList.add('hidden');
+
+                const iframe = document.getElementById('youtube-player');
+                iframe.src = `https://www.youtube.com/embed/${song.videoId}?autoplay=1&enablejsapi=1`;
+                
+                // Wait a bit for iframe to load, then set up player
+                setTimeout(() => {
+                    if (window.YT && window.YT.Player) {
+                        player = new YT.Player('youtube-player', {
+                            events: {
+                                'onStateChange': onPlayerStateChange
+                            }
+                        });
+                    }
+                }, 1000);
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            // Video ended (state 0)
+            if (event.data === 0) {
+                console.log('Video ended, skipping to next');
+                skipSong();
+            }
+        }
+
+        function skipSong() {
+            if (queue.length > 0) {
+                const nextSong = queue.shift();
+                playSong(nextSong);
+                updateQueue();
+            } else {
+                currentSong = null;
+                pushToServer();
+                document.getElementById('now-playing').classList.add('hidden');
+                document.getElementById('empty-player').classList.remove('hidden');
+            }
+        }
+
+        function removeSong(id) {
+            queue = queue.filter(song => song.id !== id);
+            updateQueue();
+            pushToServer();
+        }
+
+        function updateQueue() {
+            const container = document.getElementById('queue-container');
+            const count = document.getElementById('queue-count');
+            count.textContent = queue.length;
+
+            container.innerHTML = '';
+
+            if (queue.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-state';
+                emptyDiv.textContent = 'Queue is empty';
+                container.appendChild(emptyDiv);
+            } else {
+                queue.forEach((song, index) => {
+                    const queueItem = document.createElement('div');
+                    queueItem.className = 'queue-item';
+
+                    const itemInfo = document.createElement('div');
+                    itemInfo.className = 'queue-item-info';
+
+                    const queueNumber = document.createElement('span');
+                    queueNumber.className = 'queue-number';
+                    queueNumber.textContent = '#' + (index + 1);
+
+                    const img = document.createElement('img');
+                    img.src = 'https://img.youtube.com/vi/' + escapeHtml(song.videoId) + '/default.jpg';
+                    img.alt = 'Thumbnail';
+                    img.className = 'queue-thumb';
+
+                    const infoDiv = document.createElement('div');
+                    const addedAtDiv = document.createElement('div');
+                    addedAtDiv.style.fontSize = '0.9rem';
+                    addedAtDiv.style.color = 'rgba(255, 255, 255, 0.8)';
+                    addedAtDiv.textContent = 'Added at ' + song.addedAt;
+                    infoDiv.appendChild(addedAtDiv);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn btn-danger';
+                    removeBtn.textContent = '🗑️';
+                    removeBtn.addEventListener('click', function() {
+                        removeSong(song.id);
+                    });
+
+                    itemInfo.appendChild(queueNumber);
+                    itemInfo.appendChild(img);
+                    itemInfo.appendChild(infoDiv);
+                    queueItem.appendChild(itemInfo);
+                    queueItem.appendChild(removeBtn);
+                    container.appendChild(queueItem);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
