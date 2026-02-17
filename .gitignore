@@ -33,3 +33,7 @@ wheels/
 
 # OS
 Thumbs.db
+
+# Claude Code
+.claude/
+.superdesign
